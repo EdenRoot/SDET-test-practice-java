@@ -9,9 +9,9 @@ version = "1.0"
 dependencies {
     implementation(libs.selenium.java)
     implementation(libs.webdrivermanager)
+    implementation(libs.allure.junit5)
 
     testImplementation(libs.junit.jupiter)
-    testImplementation(libs.allure.junit5)
     runtimeOnly(libs.aspectjweaver)
 }
 
