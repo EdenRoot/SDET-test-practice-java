@@ -2,6 +2,7 @@ package page.manager;
 
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -38,22 +39,39 @@ public class CartPage extends BasePage {
 
     @Step("Удвоить количество самого дешевого товара")
     public void doubleCheapestItemQuantity() {
-        List<WebElement> rows = webDriver.findElements(By.cssSelector("table.table-striped.grid tbody tr"));
+        By rowsLocator = By.cssSelector(".cart-info table tr:not(:first-child)");
+
+        try {
+            wait.until(ExpectedConditions.presenceOfElementLocated(rowsLocator));
+        } catch (TimeoutException e) {
+            webDriver.navigate().refresh();
+            wait.until(ExpectedConditions.presenceOfElementLocated(rowsLocator));
+        }
+
+        List<WebElement> rows = webDriver.findElements(rowsLocator);
+
         int cheapIdx = 0;
         double min = Double.MAX_VALUE;
 
         for (int i = 0; i < rows.size(); i++) {
-            String priceText = rows.get(i).findElement(By.cssSelector("td:nth-child(4)")).getText()
-                    .replaceAll("[^0-9.]", "").trim();
-            double price = Double.parseDouble(priceText);
+            List<WebElement> cells = rows.get(i).findElements(By.tagName("td"));
 
+            if (cells.size() < 4) {
+                continue;
+            }
+
+            String priceText = cells.get(3).getText().replaceAll("[^0-9.]", "").trim();
+            if (priceText.isEmpty()) continue;
+
+            double price = Double.parseDouble(priceText);
             if (price < min) {
                 min = price;
                 cheapIdx = i;
             }
         }
 
-        WebElement qtyInp = rows.get(cheapIdx).findElement(By.cssSelector("input.form-control"));
+        WebElement targetRow = rows.get(cheapIdx);
+        WebElement qtyInp = targetRow.findElement(By.cssSelector("input.form-control"));
         int currentQty = Integer.parseInt(qtyInp.getAttribute("value"));
         qtyInp.clear();
         qtyInp.sendKeys(String.valueOf(currentQty * 2));
